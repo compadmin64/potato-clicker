@@ -1,7 +1,3 @@
-###IMPORTANT INFORMATION TO KNOW!
-Github Pages does not support Python at this current time. It is very sad.
-To mediate this, you are permitted to download the repo to play the game.
-You do not need to do anything more after downloading the repo.
-The the index page will handle the rest automatically.
+#IMPORTANT INFORMATION TO KNOW!
+Github Pages does not support Python at this current time. It is very sad. But to bypass this, you are allowed to download the repo to play the game. The game should work automatically, nothing should need to be configured to run the game.
 Have fun!
-
