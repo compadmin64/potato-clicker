@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Potato Clicker</title>
+
+    <!-- PyScript -->
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: white;
+        }
+
+        .game {
+            display: flex;
+            height: 100vh;
+        }
+
+        .panel {
+            width: 20%;
+            padding: 15px;
+            background-color: #2b2b2b;
+        }
+            .title {
+                font-size: 36px;
+                margin-bottom: 20px;
+            }
+
+            .potato-btn {
+                display: inline-block;
+                padding: 18px 28px;
+                background: linear-gradient(180deg,#f6c85f,#f09d2f);
+                color: #2b2b2b;
+                font-weight: bold;
+                font-size: 20px;
+                border: none;
+                border-radius: 12px;
+                cursor: pointer;
+                box-shadow: 0 6px 0 rgba(0,0,0,0.3);
+            }
+
+            .counter {
+                font-size: 28px;
+                margin-top: 18px;
+            }
+        .center {
+            width: 60%;
+            text-align: center;
+            }
+            /* Cards for upgrades/seeds */
+            .section-title {
+                margin-top: 0;
+                margin-bottom: 8px;
+            }
+
+            .cards {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                align-items: flex-start;
+            }
+
+            .card {
+                width: 140px;
+                height: 160px;
+                background: linear-gradient(180deg,#3a3a3a,#2a2a2a);
+                border-radius: 8px;
+                padding: 8px;
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .card-img {
+                width: 100%;
+                height: 80px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 44px;
+                border-radius: 6px;
+                background: rgba(255,255,255,0.02);
+            }
+
+            .card-name {
+                font-size: 14px;
+                text-align: center;
+            }
+
+            .card-price {
+                font-size: 13px;
+                color: #ffd27a;
+            }
+
+            .buy-btn {
+                padding: 6px 8px;
+                border-radius: 6px;
+                border: none;
+                cursor: pointer;
+                background: #f09d2f;
+                color: #2b2b2b;
+                font-weight: bold;
+            }
+
+            /* Toasts */
+            .toast-container {
+                position: fixed;
+                top: 16px;
+                right: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                z-index: 9999;
+                pointer-events: none;
+            }
+
+            .toast {
+                pointer-events: auto;
+                background: rgba(50,50,50,0.96);
+                color: #fff;
+                padding: 10px 14px;
+                border-radius: 8px;
+                box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+                opacity: 0;
+                transform: translateY(-8px);
+                transition: opacity 160ms ease, transform 160ms ease;
+                font-size: 14px;
+                min-width: 160px;
+            }
+
+            .toast.show {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        </style>
+
+        </head>
+        <body>
+
+            <div class="game">
+                <div class="panel">
+                    <h3>Stats</h3>
+                    <div id="potatoes">Potatoes harvested: 0</div>
+                    <div id="planted">Planted: 0</div>
+                    <div id="balance">Money: $0</div>
+                    <div id="prices">Sell: $10</div>
+                    <div style="margin-top:8px">
+                        <button id="sellBtn" class="buy-btn">Sell All</button>
+                    </div>
+                </div>
+
+                <div class="center">
+                    <div class="title">Potato Clicker</div>
+                    <button id="potatoBtn" class="potato-btn">Click Potato 🥔</button>
+                    <div id="counter" class="counter">0</div>
+                </div>
+
+                <div class="panel">
+                    <h3 class="section-title">Upgrades</h3>
+                    <div id="upgradesGrid" class="cards">
+                        <!-- Cards will be rendered here -->
+                    </div>
+
+                    <h3 class="section-title" style="margin-top:12px">Seeds</h3>
+                    <div id="seedsGrid" class="cards">
+                        <!-- Seed cards rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+            <script>
+            // Unified game state and UI logic
+            (function(){
+                // game state
+                window.game = {
+                    count: 0,            // harvested potatoes
+                    planted: 0,         // planted (unharvested) potatoes
+                    balance: 0,          // dollars
+                    sellPrice: 10,       // $ per potato
+                    sellMultiplier: 1.0, // upgrades increase this
+                };
+
+                // elements
+                const potatoBtn = document.getElementById('potatoBtn');
+                const counter = document.getElementById('counter');
+                const potatoesEl = document.getElementById('potatoes');
+                const plantedEl = document.getElementById('planted');
+                const balanceEl = document.getElementById('balance');
+                const pricesEl = document.getElementById('prices');
+                const sellBtn = document.getElementById('sellBtn');
+
+                function formatMoney(n){ return '$' + n.toFixed(2); }
+
+                // Toast helper
+                const toastContainer = document.getElementById('toastContainer');
+                function showToast(message, duration = 2200){
+                    if(!toastContainer) return console.log(message);
+                    const t = document.createElement('div');
+                    t.className = 'toast';
+                    t.textContent = message;
+                    toastContainer.appendChild(t);
+                    // small delay to allow insertion before animating
+                    requestAnimationFrame(()=> t.classList.add('show'));
+                    // remove after duration
+                    setTimeout(()=>{
+                        t.classList.remove('show');
+                        setTimeout(()=> t.remove(), 220);
+                    }, duration);
+                }
+
+                function updateUI(){
+                    counter.textContent = window.game.count;
+                    potatoesEl.textContent = 'Potatoes harvested: ' + window.game.count;
+                    plantedEl.textContent = 'Planted: ' + window.game.planted;
+                    balanceEl.textContent = 'Money: ' + formatMoney(window.game.balance);
+                    pricesEl.textContent = 'Sell: ' + formatMoney(window.game.sellPrice * window.game.sellMultiplier);
+                }
+
+                potatoBtn.addEventListener('click', ()=>{
+                    // harvest planted potatoes first
+                    if(window.game.planted > 0){
+                        window.game.planted -= 1;
+                        window.game.count += 1;
+                    } else {
+                        window.game.count += 1;
+                    }
+                    potatoBtn.style.transform = 'translateY(2px)';
+                    setTimeout(()=> potatoBtn.style.transform = '', 80);
+                    updateUI();
+                });
+
+                sellBtn.addEventListener('click', ()=>{
+                    if(window.game.count <= 0) return;
+                    const earned = window.game.count * window.game.sellPrice * window.game.sellMultiplier;
+                    window.game.balance += earned;
+                    window.game.count = 0;
+                    updateUI();
+                });
+
+                // sample items
+                const upgrades = [
+                    {id:'u1', type:'upgrade', name: 'Big Hoe', price: 50, img: '🛠️', effect: {sellMultiplierIncrease: 0.10}},
+                    {id:'u2', type:'upgrade', name: 'Auto Harvester', price: 250, img: '🤖', effect: {sellMultiplierIncrease: 0.10}},
+                    {id:'u3', type:'upgrade', name: 'Irrigation', price: 120, img: '💧', effect: {sellMultiplierIncrease: 0.10}}
+                ];
+
+                const seeds = [
+                    {id:'s1', type:'seed', name: 'Common Seed', price: 5, img: '🌱', yield:1},
+                    {id:'s2', type:'seed', name: 'Rare Seed', price: 40, img: '🌿', yield:3},
+                    {id:'s3', type:'seed', name: 'Golden Seed', price: 200, img: '✨', yield:10}
+                ];
+
+                function makeCard(item){
+                    const el = document.createElement('div');
+                    el.className = 'card';
+
+                    const img = document.createElement('div');
+                    img.className = 'card-img';
+                    img.textContent = item.img || '🟫';
+
+                    const name = document.createElement('div');
+                    name.className = 'card-name';
+                    name.textContent = item.name;
+
+                    const price = document.createElement('div');
+                    price.className = 'card-price';
+                    price.textContent = formatMoney(item.price);
+
+                    const btn = document.createElement('button');
+                    btn.className = 'buy-btn';
+                    btn.textContent = 'Buy';
+
+                    btn.addEventListener('click', ()=>{
+                        if(window.game.balance < item.price){
+                            showToast('Not enough money for ' + item.name);
+                            return;
+                        }
+
+                        // Deduct cost
+                        window.game.balance -= item.price;
+
+                        if(item.type === 'seed'){
+                            // Common Seed: plant (unharvested). Others: instant yield.
+                            if(item.id === 's1'){
+                                window.game.planted += 1;
+                            } else {
+                                window.game.count += (item.yield || 1);
+                            }
+                        } else if(item.type === 'upgrade'){
+                            // Apply upgrade effect and disable button
+                            const inc = (item.effect && item.effect.sellMultiplierIncrease) || 0;
+                            window.game.sellMultiplier += inc;
+                            btn.disabled = true;
+                            btn.textContent = 'Owned';
+                        }
+
+                        updateUI();
+                    });
+
+                    el.appendChild(img);
+                    el.appendChild(name);
+                    el.appendChild(price);
+                    el.appendChild(btn);
+
+                    return el;
+                }
+
+                // render cards
+                const upGrid = document.getElementById('upgradesGrid');
+                const sdGrid = document.getElementById('seedsGrid');
+
+                upgrades.forEach(u => upGrid.appendChild(makeCard(u)));
+                seeds.forEach(s => sdGrid.appendChild(makeCard(s)));
+
+                // initial UI update
+                window.addEventListener('load', updateUI);
+            })();
+        </script>
+        
+            </body>
+
+        </html>

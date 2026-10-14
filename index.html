@@ -61,52 +61,58 @@
             .cards {
                 display: flex;
                 flex-wrap: wrap;
-                gap: 10px;
+                gap: 8px;
                 align-items: flex-start;
+                max-height: 430px;
+                overflow: auto;
+                padding-right: 4px;
             }
 
             .card {
-                width: 140px;
-                height: 160px;
+                width: 118px;
+                height: 145px;
                 background: linear-gradient(180deg,#3a3a3a,#2a2a2a);
                 border-radius: 8px;
-                padding: 8px;
+                padding: 6px;
                 box-sizing: border-box;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: space-between;
+                flex-shrink: 0;
             }
 
             .card-img {
                 width: 100%;
-                height: 80px;
+                height: 72px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 44px;
+                font-size: 34px;
                 border-radius: 6px;
                 background: rgba(255,255,255,0.02);
             }
 
             .card-name {
-                font-size: 14px;
+                font-size: 12px;
+                line-height: 1.15;
                 text-align: center;
             }
 
             .card-price {
-                font-size: 13px;
+                font-size: 12px;
                 color: #ffd27a;
             }
 
             .buy-btn {
-                padding: 6px 8px;
+                padding: 5px 7px;
                 border-radius: 6px;
                 border: none;
                 cursor: pointer;
                 background: #f09d2f;
                 color: #2b2b2b;
                 font-weight: bold;
+                font-size: 12px;
             }
 
             /* Toasts */
@@ -161,6 +167,44 @@
             .plant-name { font-weight: 600; }
 
             .plant-timer { color: #ffd27a; }
+
+            /* Jumpscare */
+            .jumpscare {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8) url('https://i.imgur.com/4AiY6gG.png') center/contain no-repeat;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.4s ease;
+                z-index: 10000;
+            }
+
+            .jumpscare.show {
+                opacity: 1;
+            }
+
+            /* Commentary Panel */
+            .commentary-panel {
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%) translateY(8px);
+                background: rgba(30,30,30,0.9);
+                color: #fff;
+                padding: 12px 16px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+                font-size: 14px;
+                max-width: 90%;
+                pointer-events: none;
+                z-index: 10001;
+                text-align: center;
+                opacity: 0;
+                transition: opacity 220ms ease, transform 220ms ease;
+            }
         </style>
 
         </head>
@@ -199,30 +243,35 @@
                 </div>
 
                 <div class="panel">
-                    <h3 class="section-title">Seeds</h3>
+                    <h3 class="section-title">Potatoes</h3>
                     <div id="seedsGrid" class="cards">
-                        <!-- Seed cards rendered here (right side) -->
+                        <!-- Potato cards rendered here (right side) -->
                     </div>
                 </div>
             </div>
 
             <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+            <div id="jumpscare" class="jumpscare" aria-hidden="true"></div>
+            <div id="commentaryPanel" class="commentary-panel" aria-live="polite">Projector Potato is listening...</div>
 
             <script>
             (function(){
                 // --- Game state ---
                 window.game = {
-                    harvested: [],      // array of harvested potato objects awaiting sale
-                    planted: [],        // array of planted potato objects
-                    balance: 0,         // dollars
-                    baseSellPrice: 10,  // base sell price for common potato
+                    harvested: [],
+                    planted: [],
+                    balance: 0,
+                    baseSellPrice: 10,
                     sellMultiplier: 1.0,
-                    growthSpeedMultiplier: 1.0, // increases speed (1.0 = normal)
+                    growthSpeedMultiplier: 1.0,
                     maxPlots: 3,
-                    darkMajicCount: 0   // count of dark majic potatoes
+                    darkMajicCount: 0,
+                    nextProjectorEvent: Date.now() + 150000,
+                    lastProjectorJumpscare: 0,
+                    commentary: [],
+                    jumpscareUntil: 0
                 };
 
-                // DOM elements
                 const potatoBtn = document.getElementById('potatoBtn');
                 const counter = document.getElementById('counter');
                 const potatoesEl = document.getElementById('potatoes');
@@ -235,8 +284,10 @@
                 const plantedListEl = document.getElementById('plantedList');
                 const harvestAllBtn = document.getElementById('harvestAllBtn');
                 const toastContainer = document.getElementById('toastContainer');
+                const jumpscareEl = document.getElementById('jumpscare');
+                const commentaryPanel = document.getElementById('commentaryPanel');
 
-                function formatMoney(n){ return '$' + n.toFixed(2); }
+                function formatMoney(n){ return '$' + (Number(n) || 0).toFixed(2); }
 
                 function showToast(message, duration = 2200){
                     if(!toastContainer) return console.log(message);
@@ -248,30 +299,59 @@
                     setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=> t.remove(), 220); }, duration);
                 }
 
-                // --- Seed Definitions ---
-                // locked seeds must be unlocked via the Unlock upgrade or appear as unlocked by default
-                const seeds = [
-                    {id:'common', name:'Common Seed', price:5, img:'🌱', growTime:10, sellValue:null, canBeSold:true, locked:false},
-                    {id:'golden', name:'Golden Seed', price:200, img:'✨', growTime:20, sellValue:50, locked:true},
-                    {id:'shadow', name:'Shadow Seed', price:25, img:'🌑', growTime:12, sellValue:0, canBeSold:false, isShadow:true, locked:true},
-                    {id:'majic', name:'Majic Seed', price:150, img:'🔮', growTime:8, sellValue:100, locked:true},
-                    {id:'mythic', name:'Mythic Seed', price:109.9, img:'🌟', growTime:25, sellValue:null, locked:true, isMythic:true},
-                    {id:'darkmajic', name:'Dark Majic Seed', price:25, img:'🤍', growTime:15, sellValue:25, locked:true, isDarkMajic:true}
+                function addComment(message, type = 'game'){
+                    const item = { message, type, time: Date.now() };
+                    const duplicateWindow = 3000;
+                    const lastSame = window.game.commentary.find(c => c.type === type && c.message === message && (Date.now() - c.time) < duplicateWindow);
+                    if(lastSame){ return; }
+                    window.game.commentary = [item];
+                    if(commentaryPanel){
+                        commentaryPanel.textContent = message;
+                        commentaryPanel.style.opacity = '1';
+                        commentaryPanel.style.transform = 'translateX(-50%) translateY(0)';
+                        clearTimeout(commentaryPanel._fadeTimer);
+                        commentaryPanel._fadeTimer = setTimeout(() => {
+                            commentaryPanel.style.opacity = '0';
+                            commentaryPanel.style.transform = 'translateX(-50%) translateY(8px)';
+                        }, 3000);
+                    }
+                }
+
+                function triggerJumpscare(duration = 800){
+                    window.game.jumpscareUntil = Date.now() + duration;
+                    if(jumpscareEl){
+                        jumpscareEl.classList.add('show');
+                        setTimeout(()=> jumpscareEl.classList.remove('show'), duration);
+                    }
+                }
+
+                function getProjectorDelay(){
+                    const baseDelay = 150000 + Math.random() * 300000;
+                    const lastJumpscareAt = window.game.lastProjectorJumpscare || Date.now();
+                    const earliestNext = lastJumpscareAt + 10000;
+                    return Math.max(baseDelay, earliestNext - Date.now());
+                }
+
+                function getSeed(id){ return potatoes.find(s=>s.id===id); }
+
+                const potatoes = [
+                    {id:'common', name:'Normal Potato', price:5, img:'🥔', growTime:10, sellValue:10, canBeSold:true, locked:false},
+                    {id:'shadow', name:'Shadow Potato', price:25, img:'🌑', growTime:12, sellValue:0, canBeSold:false, isShadow:true, locked:true},
+                    {id:'majic', name:'Majic Potato', price:150, img:'🔮', growTime:8, sellValue:25, locked:true, isMajic:true, canBeStolen:true},
+                    {id:'golden', name:'Golden Potato', price:200, img:'✨', growTime:20, sellValue:50, locked:true, canBeStolen:true},
+                    {id:'mythic', name:'Mythic Potato', price:109.9, img:'🌟', growTime:25, sellValue:1000, locked:true, isMythic:true, canBeStolen:false},
+                    {id:'darkmajic', name:'Dark Majic Potato', price:25, img:'🤍', growTime:15, sellValue:25, locked:true, isDarkMajic:true},
+                    {id:'abyssal', name:'Abyssal Potato', price:0, img:'🕳️', growTime:0, sellValue:35, locked:false, isAbyssal:true, canBeSold:true}
                 ];
 
-                // --- Upgrades ---
                 const upgrades = [
                     {id:'u_value', name:'Value Increase', price:100, img:'💰', description:'Increase potato selling value by 10%'},
                     {id:'u_plot', name:'Farm Plot', price:150, img:'🧱', description:'Add an additional farm plot'},
                     {id:'u_grow', name:'Growing Increase', price:120, img:'⚡', description:'Increase growing speed by 10%'},
-                    {id:'u_unlock', name:'Unlock A New Potato Seed', price:60, img:'🎲', description:'Unlocks a random new seed'}
+                    {id:'u_unlock', name:'Unlock A New Potato', price:60, img:'🎲', description:'Unlocks a random new potato'}
                 ];
 
-                // helper: find seed by id
-                function getSeed(id){ return seeds.find(s=>s.id===id); }
-
-                // render cards
-                function makeSeedCard(seed){
+                function makePotatoCard(seed){
                     const el = document.createElement('div'); el.className='card';
                     const img = document.createElement('div'); img.className='card-img'; img.textContent = seed.img;
                     const name = document.createElement('div'); name.className='card-name'; name.textContent = seed.name + (seed.locked? ' 🔒':'' );
@@ -285,29 +365,40 @@
 
                         window.game.balance -= seed.price;
 
-                        // create planted object
                         const planted = {
                             id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
                             seedId: seed.id,
-                            name: seed.name.replace(' Seed',''),
+                            name: seed.name,
                             plantedAt: Date.now(),
-                            growTime: seed.growTime * 1000, // ms
+                            growTime: seed.growTime * 1000,
                             remaining: seed.growTime * 1000,
                             readyAt: null,
                             ready: false,
-                            modly: false,
-                            sellValue: (seed.sellValue != null)? seed.sellValue : (seed.yield? seed.yield * window.game.baseSellPrice : window.game.baseSellPrice),
+                            moldy: false,
+                            sellValue: (seed.sellValue != null)? seed.sellValue : window.game.baseSellPrice,
                             canBeSold: seed.canBeSold !== false,
                             isShadow: !!seed.isShadow,
+                            isMajic: !!seed.isMajic,
                             isMythic: !!seed.isMythic,
                             isDarkMajic: !!seed.isDarkMajic,
+                            isAbyssal: !!seed.isAbyssal,
                             fadeStartTime: null,
                             upgradeTimer: null,
-                            upgradeStartTime: null
+                            upgradeStartTime: null,
+                            abyssalStart: null,
+                            canBeStolen: seed.canBeStolen !== false
                         };
 
+                        if(seed.id === 'majic'){
+                            planted.sellValue = 25 * (Math.random() < 0.5 ? 1.25 : 1);
+                        }
+
+                        if(seed.id === 'golden'){
+                            planted.sellValue = 50;
+                        }
+
                         window.game.planted.push(planted);
-                            updateUI();
+                        updateUI();
                     });
 
                     el.appendChild(img); el.appendChild(name); el.appendChild(price); el.appendChild(btn);
@@ -323,7 +414,6 @@
 
                     btn.addEventListener('click', ()=>{
                         if(window.game.balance < up.price){ showToast('Not enough money for ' + up.name); return; }
-                        // Special-case: Farm Plot can be bought multiple times but has a 5s cooldown
                         if(up.id === 'u_plot'){
                             if(btn._cooling) { showToast('Farm Plot is cooling down'); return; }
                             window.game.balance -= up.price;
@@ -338,56 +428,45 @@
                             const iv = setInterval(()=>{
                                 remaining -= 1;
                                 if(remaining <= 0){
-                                    clearInterval(iv);
-                                    btn._cooling = false;
-                                    btn.disabled = false;
-                                    btn.textContent = 'Buy';
-                                } else {
-                                    btn.textContent = 'Cooling (' + remaining + 's)';
-                                }
+                                    clearInterval(iv); btn._cooling = false; btn.disabled = false; btn.textContent = 'Buy';
+                                } else { btn.textContent = 'Cooling (' + remaining + 's)'; }
                             }, 1000);
                             return;
                         }
 
-                        // Unlock upgrade: can be used while there are locked seeds
                         if(up.id === 'u_unlock'){
-                            const lockedSeeds = seeds.filter(s=>s.locked);
-                            if(lockedSeeds.length === 0){
-                                showToast('No locked seeds left');
-                                btn.disabled = true;
-                                btn.textContent = 'No Seeds';
-                                return;
+                            const lockedPotatoes = potatoes.filter(s=>s.locked);
+                            if(lockedPotatoes.length === 0){
+                                showToast('No locked potatoes left');
+                                btn.disabled = true; btn.textContent = 'No Potatoes'; return;
                             }
-                            // charge and unlock one random locked seed
                             window.game.balance -= up.price;
-                            const pick = lockedSeeds[Math.floor(Math.random()*lockedSeeds.length)];
+                            const pick = lockedPotatoes[Math.floor(Math.random()*lockedPotatoes.length)];
                             pick.locked = false;
                             showToast(pick.name + ' unlocked!');
-                            renderSeeds();
+                            renderPotatoes();
                             updateUI();
-                            // if no locked seeds remain, disable the unlock button
-                            if(seeds.filter(s=>s.locked).length === 0){ btn.disabled = true; btn.textContent = 'Owned'; }
+                            if(potatoes.filter(s=>s.locked).length === 0){ btn.disabled = true; btn.textContent = 'Owned'; }
                             return;
                         }
 
-                        // One-time purchases for other upgrades
                         window.game.balance -= up.price;
                         if(up.id === 'u_value'){
                             window.game.sellMultiplier += 0.10;
                         } else if(up.id === 'u_grow'){
-                            window.game.growthSpeedMultiplier *= 1.10; // 10% faster
+                            window.game.growthSpeedMultiplier *= 1.10;
                         }
 
                         btn.disabled = true; btn.textContent = 'Owned';
                         updateUI();
-                        renderSeeds();
+                        renderPotatoes();
                     });
 
                     el.appendChild(img); el.appendChild(name); el.appendChild(price); el.appendChild(btn);
                     return el;
                 }
 
-                function renderSeeds(){ sdGrid.innerHTML = ''; seeds.forEach(s=> sdGrid.appendChild(makeSeedCard(s))); }
+                function renderPotatoes(){ sdGrid.innerHTML = ''; potatoes.forEach(s=> sdGrid.appendChild(makePotatoCard(s))); }
                 function renderUpgrades(){ upGrid.innerHTML = ''; upgrades.forEach(u=> upGrid.appendChild(makeUpgradeCard(u))); }
 
                 function formatTime(ms){
@@ -406,194 +485,282 @@
                         const left = document.createElement('div'); left.className='plant-name'; left.textContent = p.name;
                         const right = document.createElement('div');
                         if(!p.ready){
-                            right.className='plant-timer';
-                            right.textContent = formatTime(p.remaining);
+                            right.className='plant-timer'; right.textContent = formatTime(p.remaining);
                         } else {
-                            right.className = 'plant-timer';
-                            right.textContent = p.modly ? 'Modly' : 'Ready';
+                            right.className='plant-timer'; right.textContent = p.moldy ? 'Moldy' : (p.isAbyssal ? 'Abyssal' : 'Ready');
                         }
                         item.appendChild(left); item.appendChild(right);
                         plantedListEl.appendChild(item);
                     });
                 }
 
-                // Sell All: sells only sellable harvested potatoes
+                function maybeProjectorSellComment(kind){
+                    if(kind === 'moldy'){ addComment('Projector Potato: "that\'s against the FDA rules!"', 'projector'); }
+                    else if(kind === 'normal'){ addComment('Projector Potato: "cheap-o"', 'projector'); }
+                    else if(kind === 'shadow'){ addComment('Projector Potato: "glitching the game isn\'t okay"', 'projector'); triggerJumpscare(1200); }
+                    else if(kind === 'majic'){ addComment('Projector Potato: "what sourcery is this?!"', 'projector'); }
+                    else if(kind === 'golden' || kind === 'mythic'){ addComment('Projector Potato: "nice."', 'projector'); }
+                }
+
+                function stealHarvestedPotatoes(){
+                    const stealable = window.game.harvested.filter(p => p.canBeStolen !== false && p.type !== 'manual');
+                    if(stealable.length === 0){
+                        addComment('Projector Potato: "I found nothing to steal."', 'projector');
+                        return;
+                    }
+
+                    const count = Math.min(stealable.length, 1 + Math.floor(Math.random() * 3));
+                    const stolen = [];
+                    for(let i = 0; i < count; i++){
+                        const index = Math.floor(Math.random() * stealable.length);
+                        const target = stealable.splice(index, 1)[0];
+                        if(target) stolen.push(target);
+                    }
+
+                    window.game.harvested = window.game.harvested.filter(h => !stolen.includes(h));
+                    showToast('Projector Potato stole ' + stolen.length + ' potato' + (stolen.length === 1 ? '' : 'es') + '!');
+                    addComment('Projector Potato: "Your potatoes are mine."', 'projector');
+                    triggerJumpscare(1400);
+                }
+
                 sellBtn.addEventListener('click', ()=>{
                     if(window.game.harvested.length === 0) return showToast('Nothing to sell');
                     let earned = 0;
                     const remaining = [];
+                    const sellComments = new Set();
                     window.game.harvested.forEach(h=>{
-                        if(h.canBeSold){ earned += h.sellValue * window.game.sellMultiplier; }
-                        else { remaining.push(h); }
+                        if(h.canBeSold === false || (h.type === 'shadow')){
+                            remaining.push(h);
+                            if(h.type === 'shadow'){
+                                sellComments.add('shadow');
+                            }
+                            return;
+                        }
+                        if(h.type === 'manual'){
+                            earned += h.sellValue * window.game.sellMultiplier;
+                            sellComments.add('normal');
+                        } else if(h.type === 'moldy'){
+                            earned += h.sellValue * window.game.sellMultiplier;
+                            sellComments.add('moldy');
+                        } else {
+                            earned += h.sellValue * window.game.sellMultiplier;
+                            if(h.type === 'golden' || h.type === 'mythic'){ sellComments.add(h.type); }
+                            else if(h.type === 'majic'){ sellComments.add('majic'); }
+                            else if(h.type === 'normal'){ sellComments.add('normal'); }
+                        }
                     });
+                    sellComments.forEach(kind => maybeProjectorSellComment(kind));
                     window.game.harvested = remaining;
                     window.game.balance += earned;
                     updateUI();
                     if(earned>0) showToast('Sold for ' + formatMoney(earned));
                 });
 
-                // Harvest All: harvest all planted that are ready
                 harvestAllBtn.addEventListener('click', ()=>{
                     const ready = window.game.planted.filter(p=>p.ready);
                     if(ready.length === 0) return showToast('No ready potatoes to harvest');
+                    const harvestComments = new Set();
                     ready.forEach(p=>{
-                        window.game.harvested.push({type:p.seedId, sellValue: p.sellValue, canBeSold: p.canBeSold && !p.modly});
-                        if(p.modly) showToast(p.name + ' harvested but is modly');
+                        const harvested = {
+                            id: p.id,
+                            type: p.seedId,
+                            sellValue: p.sellValue,
+                            canBeSold: p.canBeSold && !p.moldy,
+                            canBeStolen: p.canBeStolen !== false,
+                            name: p.name,
+                            isMajic: p.isMajic,
+                            isMythic: p.isMythic,
+                            isDarkMajic: p.isDarkMajic,
+                            isAbyssal: p.isAbyssal
+                        };
+                        if(p.isMajic){ harvested.sellValue = p.sellValue * (Math.random() < 0.5 ? 1.25 : 1); }
+                        if(p.isAbyssal && p.abyssalStart){ harvested.sellValue = p.sellValue; }
+                        window.game.harvested.push(harvested);
+                        if(p.moldy) showToast(p.name + ' harvested but is moldy');
+                        if(p.isAbyssal){ harvestComments.add('abyssal'); }
+                        if(p.isMythic){ harvestComments.add('mythic'); }
+                        if(p.isDarkMajic){ harvestComments.add('darkmajic'); }
+                        if(p.moldy){ harvestComments.add('moldy'); }
                     });
-                    // remove ready items from planted
+                    harvestComments.forEach(kind => {
+                        if(kind === 'abyssal'){ addComment('Into the abyss!', 'abyssal'); }
+                        else if(kind === 'mythic'){ addComment('Wow shiny!', 'mythic'); }
+                        else if(kind === 'darkmajic'){ addComment('Sourcery!', 'darkmajic'); }
+                        else if(kind === 'moldy'){ addComment('Ewww..', 'moldy'); }
+                    });
                     window.game.planted = window.game.planted.filter(p=>!p.ready);
                     updateUI(); renderPlantList();
                 });
 
-                // Harvesting via main potato button: harvest earliest ready potato if exists, otherwise give one free potato
                 potatoBtn.addEventListener('click', ()=>{
-                    // find earliest ready
                     const readyPlanted = window.game.planted.filter(p=>p.ready);
                     if(readyPlanted.length > 0){
                         readyPlanted.sort((a,b)=> (a.readyAt||0) - (b.readyAt||0));
                         const p = readyPlanted[0];
-                        // remove from planted
                         window.game.planted = window.game.planted.filter(x=>x.id!==p.id);
-                        // add to harvested stash
-                        window.game.harvested.push({type:p.seedId, sellValue: p.sellValue, canBeSold: p.canBeSold && !p.modly});
-                        if(p.modly) showToast(p.name + ' turned modly and is worth less.');
+                        const harvested = {
+                            id: p.id,
+                            type: p.seedId,
+                            sellValue: p.sellValue,
+                            canBeSold: p.canBeSold && !p.moldy,
+                            canBeStolen: p.canBeStolen !== false,
+                            name: p.name,
+                            isMajic: p.isMajic,
+                            isMythic: p.isMythic,
+                            isDarkMajic: p.isDarkMajic,
+                            isAbyssal: p.isAbyssal
+                        };
+                        if(p.seedId === 'majic'){ harvested.sellValue = p.sellValue * (Math.random() < 0.5 ? 1.25 : 1); }
+                        if(p.isMythic){ addComment('Wow shiny!', 'mythic'); }
+                        if(p.isDarkMajic){ addComment('Sourcery!', 'darkmajic'); }
+                        if(p.moldy){ addComment('Ewww..', 'moldy'); }
+                        if(p.isAbyssal){ addComment('Into the abyss!', 'abyssal'); }
+                        window.game.harvested.push(harvested);
+                        if(p.moldy) showToast(p.name + ' turned moldy and is worth less.');
                     } else {
-                        // manual click gives a common potato immediately
-                        window.game.harvested.push({type:'manual', sellValue: window.game.baseSellPrice, canBeSold:true});
+                        window.game.harvested.push({type:'manual', sellValue: window.game.baseSellPrice, canBeSold:true, canBeStolen:false});
                     }
                     potatoBtn.style.transform = 'translateY(2px)'; setTimeout(()=> potatoBtn.style.transform='',80);
                     updateUI();
                 });
 
-                // game loop: update planted progress, detect ready and modly
                 let lastTick = Date.now();
                 function tick(){
                     const now = Date.now();
                     const dt = now - lastTick; lastTick = now;
 
-                    // compute shadow buff: if any non-modly shadow planted exist, boost growth speed
-                    const activeShadow = window.game.planted.some(p=> p.isShadow && !p.modly);
+                    const activeShadow = window.game.planted.some(p=> p.isShadow && !p.moldy);
                     const shadowMultiplier = activeShadow ? 1.35 : 1.0;
                     const speed = window.game.growthSpeedMultiplier * shadowMultiplier;
-
-                    // track for shadow fade removal
                     const toRemove = [];
 
                     window.game.planted.forEach((p, idx) => {
                         if(!p.ready){
                             p.remaining -= dt * speed;
                             if(p.remaining <= 0){ p.ready = true; p.readyAt = Date.now(); }
-                        } else if(!p.modly){
+                        } else if(!p.moldy){
                             const sinceReady = Date.now() - (p.readyAt || Date.now());
-                            
-                            // shadow fade mechanic: shadows disappear after 15 seconds of being ready
-                            if(p.isShadow){
-                                if(p.fadeStartTime === null) p.fadeStartTime = Date.now();
-                                const fadeDuration = 15000; // 15 seconds to fade
-                                const fadeProgress = (Date.now() - p.fadeStartTime) / fadeDuration;
-                                if(fadeProgress >= 1.0){
-                                    toRemove.push(idx);
-                                    showToast(p.name + ' faded away');
-                                    return;
+
+                            if(p.isShadow && !p.isAbyssal){
+                                if(sinceReady >= 60000){
+                                    p.seedId = 'abyssal';
+                                    p.name = 'Abyssal Potato';
+                                    p.isAbyssal = true;
+                                    p.sellValue = 35;
+                                    p.canBeSold = true;
+                                    p.abyssalStart = Date.now();
+                                    p.canBeStolen = true;
+                                    addComment('Into the abyss!', 'abyssal');
+                                    showToast('Abyssal Potato spawned!');
+                                } else if(p.fadeStartTime === null){
+                                    p.fadeStartTime = Date.now();
+                                }
+
+                                if(p.fadeStartTime !== null && !p.isAbyssal){
+                                    const fadeProgress = (Date.now() - p.fadeStartTime) / 15000;
+                                    if(fadeProgress >= 1.0){
+                                        toRemove.push(idx); showToast(p.name + ' faded away'); return;
+                                    }
                                 }
                             }
-                            
-                            // modly mechanic for non-shadow potatoes
-                            if(sinceReady >= 30000 && !p.isShadow && !p.isDarkMajic){
-                                p.modly = true;
-                                // reduce value to 10% (sells for 90% less)
-                                p.sellValue = Math.max(0, p.sellValue * 0.10);
-                                showToast(p.name + ' became modly and lost value');
+
+                            if(p.isAbyssal && p.abyssalStart !== null){
+                                if(Date.now() - p.abyssalStart >= 5000){
+                                    toRemove.push(idx); showToast('Abyssal Potato disappeared into darkness'); return;
+                                }
                             }
-                            
-                            // golden to mythic conversion (1% chance per tick, ~once per 10 seconds)
-                            if(p.seedId === 'golden' && Math.random() < 0.0001){
+
+                            if(sinceReady >= 30000 && !p.isShadow && !p.isDarkMajic && !p.isAbyssal){
+                                p.moldy = true;
+                                p.sellValue = Math.max(0, p.sellValue * 0.10);
+                                addComment('Ewww..', 'moldy');
+                                showToast(p.name + ' became moldy and lost value');
+                            }
+
+                            if(p.seedId === 'golden' && Math.random() < Math.min(0.9999, 0.001 + 99.99)){
                                 p.seedId = 'mythic';
-                                p.name = 'Mythic';
+                                p.name = 'Mythic Potato';
                                 p.isMythic = true;
-                                p.sellValue = window.game.baseSellPrice * 10.99; // 999% more (10.99x original)
-                                showToast('Golden converted to Mythic!');
+                                p.sellValue = 1000;
+                                p.canBeSold = true;
+                                p.canBeStolen = false;
+                                addComment('Wow shiny!', 'mythic');
+                                showToast('Golden Potato transformed into Mythic Potato!');
+                            }
+
+                            if(p.isDarkMajic && p.ready && !p.moldy){
+                                if(p.upgradeTimer === null){
+                                    const baseDuration = 30000 + Math.random() * 70000;
+                                    p.upgradeTimer = baseDuration * Math.pow(2, Math.max(0, window.game.darkMajicCount - 1));
+                                    p.upgradeStartTime = Date.now();
+                                } else {
+                                    const elapsed = Date.now() - p.upgradeStartTime;
+                                    if(elapsed >= p.upgradeTimer){
+                                        const randomUpgrade = ['value', 'grow'][Math.floor(Math.random() * 2)];
+                                        if(randomUpgrade === 'value'){
+                                            window.game.sellMultiplier += 0.10;
+                                            showToast('Dark Majic: Value +10%');
+                                        } else {
+                                            window.game.growthSpeedMultiplier *= 1.10;
+                                            showToast('Dark Majic: Speed +10%');
+                                        }
+                                        addComment('Sourcery!', 'darkmajic');
+                                        const baseDuration = 30000 + Math.random() * 70000;
+                                        p.upgradeTimer = baseDuration * Math.pow(2, Math.max(0, window.game.darkMajicCount - 1));
+                                        p.upgradeStartTime = Date.now();
+                                    }
+                                }
                             }
                         }
                     });
 
-                    // check for dark magic spawning from shadow+mythic pair (0.001% chance)
                     const readyShadows = window.game.planted.filter((p, idx) => p.isShadow && p.ready && !toRemove.includes(idx));
-                    const readyMythics = window.game.planted.filter(p => p.isMythic && p.ready);
-                    
-                    if(readyShadows.length > 0 && readyMythics.length > 0){
-                        for(let i = 0; i < readyShadows.length && readyMythics.length > 0; i++){
-                            if(Math.random() < 0.000001){ // 0.001% chance per tick
+                    const readyMajics = window.game.planted.filter(p => p.isMajic && p.ready && !p.moldy);
+                    if(readyShadows.length > 0 && readyMajics.length > 0){
+                        for(let i = 0; i < readyShadows.length && readyMajics.length > 0; i++){
+                            if(Math.random() < 0.001){
                                 const shadow = readyShadows[i];
-                                const mythic = readyMythics[0];
-                                
-                                // remove both shadow and mythic potatoes
-                                window.game.planted = window.game.planted.filter(p=> p.id !== shadow.id && p.id !== mythic.id);
-                                
-                                // create dark majic potato
+                                const majic = readyMajics[0];
+                                window.game.planted = window.game.planted.filter(p => p.id !== shadow.id && p.id !== majic.id);
                                 const darkMajic = {
                                     id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
                                     seedId: 'darkmajic',
-                                    name: 'Dark Majic',
+                                    name: 'Dark Majic Potato',
                                     plantedAt: Date.now(),
                                     growTime: 15000,
                                     remaining: 15000,
                                     readyAt: null,
                                     ready: false,
-                                    modly: false,
-                                    sellValue: window.game.baseSellPrice * 2.5, // 150% more than common
+                                    moldy: false,
+                                    sellValue: window.game.baseSellPrice * 2.5,
                                     canBeSold: true,
                                     isDarkMajic: true,
+                                    isMajic: false,
+                                    isShadow: false,
                                     upgradeTimer: null,
-                                    upgradeStartTime: null
+                                    upgradeStartTime: null,
+                                    canBeStolen: false
                                 };
                                 window.game.planted.push(darkMajic);
-                                window.game.darkMajicCount++;
+                                window.game.darkMajicCount += 1;
+                                addComment('Sourcery!', 'darkmajic');
                                 showToast('Dark Majic Potato created!');
-                                
-                                // refresh arrays for next iteration
-                                readyMythics.splice(0, 1);
+                                readyMajics.splice(0, 1);
                                 readyShadows.splice(i, 1);
                                 i--;
                             }
                         }
                     }
 
-                    // dark majic upgrade application: applies random upgrades at intervals
-                    window.game.planted.forEach(p => {
-                        if(p.isDarkMajic && p.ready && !p.modly){
-                            if(p.upgradeTimer === null){
-                                // initialize upgrade timer: 30-100 seconds base, doubled per dark majic potato
-                                const baseDuration = 30000 + Math.random() * 70000; // 30-100 seconds
-                                const multiplier = Math.pow(2, window.game.darkMajicCount - 1);
-                                p.upgradeTimer = baseDuration * multiplier;
-                                p.upgradeStartTime = Date.now();
-                            } else {
-                                const elapsed = Date.now() - p.upgradeStartTime;
-                                if(elapsed >= p.upgradeTimer){
-                                    // apply random upgrade (value or grow)
-                                    const upgradeTypes = ['value', 'grow'];
-                                    const randomUpgrade = upgradeTypes[Math.floor(Math.random() * upgradeTypes.length)];
-                                    
-                                    if(randomUpgrade === 'value'){
-                                        window.game.sellMultiplier += 0.10;
-                                        showToast('Dark Majic: Value +10%');
-                                    } else if(randomUpgrade === 'grow'){
-                                        window.game.growthSpeedMultiplier *= 1.10;
-                                        showToast('Dark Majic: Speed +10%');
-                                    }
-                                    
-                                    // reset timer for next upgrade
-                                    const baseDuration = 30000 + Math.random() * 70000;
-                                    const multiplier = Math.pow(2, window.game.darkMajicCount - 1);
-                                    p.upgradeTimer = baseDuration * multiplier;
-                                    p.upgradeStartTime = Date.now();
-                                }
-                            }
-                        }
-                    });
+                    if(window.game.lastProjectorJumpscare === 0){
+                        window.game.lastProjectorJumpscare = Date.now();
+                    }
+                    if(Date.now() >= window.game.nextProjectorEvent){
+                        stealHarvestedPotatoes();
+                        window.game.lastProjectorJumpscare = Date.now();
+                        window.game.nextProjectorEvent = Date.now() + getProjectorDelay();
+                    }
 
-                    // remove faded shadows from planted array
                     if(toRemove.length > 0){
                         window.game.planted = window.game.planted.filter((p, idx) => !toRemove.includes(idx));
                     }
@@ -608,13 +775,12 @@
                     balanceEl.textContent = 'Money: ' + formatMoney(window.game.balance);
                     pricesEl.textContent = 'Sell: ' + formatMoney(window.game.baseSellPrice * window.game.sellMultiplier);
                     renderPlantList();
-                    // enable harvest all only if at least one ready
                     const readyCount = window.game.planted.filter(p=>p.ready).length;
                     if(harvestAllBtn) harvestAllBtn.disabled = readyCount === 0;
                 }
 
-                // initial render
-                renderUpgrades(); renderSeeds(); updateUI();
+                renderUpgrades(); renderPotatoes(); updateUI();
+                addComment('Projector Potato: "I am here."', 'projector');
                 setInterval(tick, 1000);
                 window.addEventListener('load', ()=>{ lastTick = Date.now(); tick(); });
             })();
