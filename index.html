@@ -12,199 +12,300 @@
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background-color: #1e1e1e;
+            background: url('resources/background.png') center center / cover no-repeat fixed, #1e1e1e;
             color: white;
+            min-height: 100vh;
         }
 
         .game {
             display: flex;
-            height: 100vh;
+            gap: 16px;
+            min-height: 100vh;
+            padding: 18px 14px;
+            box-sizing: border-box;
         }
 
         .panel {
             width: 20%;
-            padding: 15px;
-            background-color: #2b2b2b;
+            min-width: 210px;
+            padding: 18px 14px;
+            background: rgba(22, 23, 26, 0.82);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            backdrop-filter: blur(4px);
         }
-            .title {
-                font-size: 36px;
-                margin-bottom: 20px;
-            }
 
-            .potato-btn {
-                display: inline-block;
-                padding: 18px 28px;
-                background: linear-gradient(180deg,#f6c85f,#f09d2f);
-                color: #2b2b2b;
-                font-weight: bold;
-                font-size: 20px;
-                border: none;
-                border-radius: 12px;
-                cursor: pointer;
-                box-shadow: 0 6px 0 rgba(0,0,0,0.3);
-            }
-
-            .counter {
-                font-size: 28px;
-                margin-top: 18px;
-            }
         .center {
             width: 60%;
+            min-width: 320px;
             text-align: center;
-            }
-            /* Cards for upgrades/seeds */
-            .section-title {
-                margin-top: 0;
-                margin-bottom: 8px;
-            }
+            padding: 12px 8px 0;
+        }
 
-            .cards {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 8px;
-                align-items: flex-start;
-                max-height: 430px;
-                overflow: auto;
-                padding-right: 4px;
-            }
+        .title {
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
 
-            .card {
-                width: 118px;
-                height: 145px;
-                background: linear-gradient(180deg,#3a3a3a,#2a2a2a);
-                border-radius: 8px;
-                padding: 6px;
-                box-sizing: border-box;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: space-between;
-                flex-shrink: 0;
-            }
+        .potato-btn {
+            display: inline-block;
+            padding: 18px 28px;
+            background: linear-gradient(180deg,#f6c85f,#f09d2f);
+            color: #2b2b2b;
+            font-weight: bold;
+            font-size: 20px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.3);
+        }
 
-            .card-img {
-                width: 100%;
-                height: 72px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 34px;
-                border-radius: 6px;
-                background: rgba(255,255,255,0.02);
-            }
+        .counter {
+            font-size: 28px;
+            margin-top: 18px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
 
-            .card-name {
-                font-size: 12px;
-                line-height: 1.15;
-                text-align: center;
-            }
+        .farm-scene {
+            margin-top: 18px;
+            background: rgba(28, 53, 30, 0.82);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 22px;
+            padding: 14px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.22);
+        }
 
-            .card-price {
-                font-size: 12px;
-                color: #ffd27a;
-            }
+        .farm-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
 
-            .buy-btn {
-                padding: 5px 7px;
-                border-radius: 6px;
-                border: none;
-                cursor: pointer;
-                background: #f09d2f;
-                color: #2b2b2b;
-                font-weight: bold;
-                font-size: 12px;
-            }
+        .farm-header h3 {
+            margin: 0;
+            font-size: 18px;
+        }
 
-            /* Toasts */
-            .toast-container {
-                position: fixed;
-                top: 16px;
-                right: 16px;
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                z-index: 9999;
-                pointer-events: none;
-            }
+        .farm-header span {
+            font-size: 12px;
+            color: #dfd5a5;
+        }
 
-            .toast {
-                pointer-events: auto;
-                background: rgba(50,50,50,0.96);
-                color: #fff;
-                padding: 10px 14px;
-                border-radius: 8px;
-                box-shadow: 0 6px 18px rgba(0,0,0,0.4);
-                opacity: 0;
-                transform: translateY(-8px);
-                transition: opacity 160ms ease, transform 160ms ease;
-                font-size: 14px;
-                min-width: 160px;
-            }
+        .farm-plots {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+        }
 
-            .toast.show {
-                opacity: 1;
-                transform: translateY(0);
-            }
-            /* Planted list */
-            .planted-list {
-                margin-top: 12px;
-                max-height: 180px;
-                overflow: auto;
-                text-align: left;
-                padding: 8px;
-                background: rgba(255,255,255,0.02);
-                border-radius: 6px;
-            }
+        .farm-plot {
+            position: relative;
+            height: 150px;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #7c532b 0%, #5a3820 100%);
+            border: 3px solid rgba(61, 39, 23, 0.95);
+            overflow: hidden;
+            box-shadow: inset 0 12px 30px rgba(255,255,255,0.08), 0 8px 18px rgba(0,0,0,0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-            .plant-item {
-                display: flex;
-                justify-content: space-between;
-                padding: 6px 4px;
-                border-bottom: 1px solid rgba(255,255,255,0.03);
-                font-size: 13px;
-            }
+        .farm-plot::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.08), transparent 40%);
+        }
 
-            .plant-name { font-weight: 600; }
+        .farm-plot.empty {
+            background: linear-gradient(180deg, #6a4725 0%, #492d1f 100%);
+        }
 
-            .plant-timer { color: #ffd27a; }
+        .plot-image {
+            width: 82px;
+            height: 82px;
+            object-fit: contain;
+            position: relative;
+            z-index: 1;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.25));
+        }
 
-            /* Jumpscare */
-            .jumpscare {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.8) url('https://i.imgur.com/4AiY6gG.png') center/contain no-repeat;
-                pointer-events: none;
-                opacity: 0;
-                transition: opacity 0.4s ease;
-                z-index: 10000;
-            }
+        .plot-empty {
+            position: relative;
+            z-index: 1;
+            font-size: 12px;
+            font-weight: bold;
+            color: rgba(255,255,255,0.7);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
 
-            .jumpscare.show {
-                opacity: 1;
-            }
+        .plot-status {
+            position: absolute;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            z-index: 1;
+            padding: 6px 8px;
+            border-radius: 999px;
+            background: rgba(17,17,17,0.6);
+            color: #f7d37a;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
-            /* Commentary Panel */
-            .commentary-panel {
-                position: fixed;
-                bottom: 20px;
-                left: 50%;
-                transform: translateX(-50%) translateY(8px);
-                background: rgba(30,30,30,0.9);
-                color: #fff;
-                padding: 12px 16px;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.6);
-                font-size: 14px;
-                max-width: 90%;
-                pointer-events: none;
-                z-index: 10001;
-                text-align: center;
-                opacity: 0;
-                transition: opacity 220ms ease, transform 220ms ease;
-            }
+        .plant-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: space-between;
+            padding: 6px 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            font-size: 13px;
+        }
+
+        .plant-name-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .plant-icon {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+
+        .plant-name { font-weight: 600; }
+
+        .plant-timer { color: #ffd27a; }
+
+        .card-img {
+            width: 100%;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.02);
+            overflow: hidden;
+        }
+
+        .card-asset {
+            width: 52px;
+            height: 52px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .toast {
+            pointer-events: auto;
+            background: rgba(50,50,50,0.96);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 8px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+            opacity: 0;
+            transform: translateY(-8px);
+            transition: opacity 160ms ease, transform 160ms ease;
+            font-size: 14px;
+            min-width: 160px;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        /* Planted list */
+        .planted-list {
+            margin-top: 12px;
+            max-height: 180px;
+            overflow: auto;
+            text-align: left;
+            padding: 8px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 6px;
+        }
+
+        /* Jumpscare */
+        .jumpscare {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8) url('resources/jumpscare.png') center/contain no-repeat;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 10000;
+        }
+
+        .jumpscare.show {
+            opacity: 1;
+        }
+
+        /* Commentary Panel */
+        .commentary-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(8px);
+            background: rgba(30,30,30,0.9);
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+            font-size: 14px;
+            max-width: 90%;
+            pointer-events: none;
+            z-index: 10001;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 220ms ease, transform 220ms ease;
+        }
+
+        .commentary-panel-inner {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            max-width: 100%;
+        }
+
+        .projector-badge {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
+            display: block;
+            flex-shrink: 0;
+        }
+
+        .commentary-text {
+            display: inline-block;
+            line-height: 1.3;
+        }
         </style>
 
         </head>
@@ -214,7 +315,6 @@
                 <div class="panel">
                     <h3>Stats</h3>
                     <div id="potatoes">Potatoes harvested: 0</div>
-                    <div id="planted">Planted: 0</div>
                     <div id="balance">Money: $0</div>
                     <div id="prices">Sell: $10</div>
                     <div style="margin-top:8px">
@@ -231,14 +331,13 @@
                     <div class="title">Potato Clicker</div>
                     <button id="potatoBtn" class="potato-btn">Click Potato 🥔</button>
                     <div id="counter" class="counter">0</div>
-                    <div id="plantedSection" style="margin-top:12px">
-                        <h4 style="margin:6px 0 8px 0">Planted Potatoes</h4>
-                        <div id="plantedList" class="planted-list">
-                            <!-- planted items with timers -->
+
+                    <div class="farm-scene">
+                        <div class="farm-header">
+                            <h3>Farm Plots</h3>
+                            <span id="plotHint">0 / 3 used</span>
                         </div>
-                        <div style="margin-top:8px">
-                            <button id="harvestAllBtn" class="buy-btn" disabled>Harvest All</button>
-                        </div>
+                        <div id="farmPlots" class="farm-plots"></div>
                     </div>
                 </div>
 
@@ -252,7 +351,12 @@
 
             <div id="toastContainer" class="toast-container" aria-live="polite"></div>
             <div id="jumpscare" class="jumpscare" aria-hidden="true"></div>
-            <div id="commentaryPanel" class="commentary-panel" aria-live="polite">Projector Potato is listening...</div>
+            <div id="commentaryPanel" class="commentary-panel" aria-live="polite">
+                <div class="commentary-panel-inner">
+                    <img class="projector-badge" src="resources/potato-projector.png" alt="Projector Potato">
+                    <span class="commentary-text">Projector Potato is listening...</span>
+                </div>
+            </div>
 
             <script>
             (function(){
@@ -275,19 +379,56 @@
                 const potatoBtn = document.getElementById('potatoBtn');
                 const counter = document.getElementById('counter');
                 const potatoesEl = document.getElementById('potatoes');
-                const plantedEl = document.getElementById('planted');
                 const balanceEl = document.getElementById('balance');
                 const pricesEl = document.getElementById('prices');
                 const sellBtn = document.getElementById('sellBtn');
                 const upGrid = document.getElementById('upgradesGrid');
                 const sdGrid = document.getElementById('seedsGrid');
-                const plantedListEl = document.getElementById('plantedList');
-                const harvestAllBtn = document.getElementById('harvestAllBtn');
                 const toastContainer = document.getElementById('toastContainer');
                 const jumpscareEl = document.getElementById('jumpscare');
                 const commentaryPanel = document.getElementById('commentaryPanel');
+                const farmPlotsEl = document.getElementById('farmPlots');
+                const plotHint = document.getElementById('plotHint');
 
                 function formatMoney(n){ return '$' + (Number(n) || 0).toFixed(2); }
+
+                function renderCommentaryText(message, showProjector = false){
+                    if(!commentaryPanel) return;
+                    commentaryPanel.innerHTML = '';
+
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'commentary-panel-inner';
+
+                    if(showProjector){
+                        const img = document.createElement('img');
+                        img.className = 'projector-badge';
+                        img.src = 'resources/potato-projector.png';
+                        img.alt = 'Projector Potato';
+                        wrapper.appendChild(img);
+                    }
+
+                    const text = document.createElement('span');
+                    text.className = 'commentary-text';
+                    text.textContent = showProjector ? message.replace(/^Projector Potato:\s*/i, '') : message;
+                    wrapper.appendChild(text);
+
+                    commentaryPanel.appendChild(wrapper);
+                }
+
+                function getTypeAsset(type, moldy = false){
+                    const map = {
+                        common: 'normal',
+                        shadow: 'shadow',
+                        majic: 'majic',
+                        golden: 'golden',
+                        mythic: 'mythic',
+                        darkmajic: 'darkmajic',
+                        abyssal: 'abyssal',
+                        moldy: 'moldy'
+                    };
+                    const key = moldy ? 'moldy' : (map[String(type)] || 'normal');
+                    return 'resources/type-' + key + '.png';
+                }
 
                 function showToast(message, duration = 2200){
                     if(!toastContainer) return console.log(message);
@@ -306,7 +447,8 @@
                     if(lastSame){ return; }
                     window.game.commentary = [item];
                     if(commentaryPanel){
-                        commentaryPanel.textContent = message;
+                        const showProjector = type === 'projector' || /Projector Potato/i.test(message);
+                        renderCommentaryText(message, showProjector);
                         commentaryPanel.style.opacity = '1';
                         commentaryPanel.style.transform = 'translateX(-50%) translateY(0)';
                         clearTimeout(commentaryPanel._fadeTimer);
@@ -353,7 +495,12 @@
 
                 function makePotatoCard(seed){
                     const el = document.createElement('div'); el.className='card';
-                    const img = document.createElement('div'); img.className='card-img'; img.textContent = seed.img;
+                    const imgWrap = document.createElement('div'); imgWrap.className='card-img';
+                    const img = document.createElement('img');
+                    img.className = 'card-asset';
+                    img.src = getTypeAsset(seed.id);
+                    img.alt = seed.name;
+                    imgWrap.appendChild(img);
                     const name = document.createElement('div'); name.className='card-name'; name.textContent = seed.name + (seed.locked? ' 🔒':'' );
                     const price = document.createElement('div'); price.className='card-price'; price.textContent = formatMoney(seed.price);
                     const btn = document.createElement('button'); btn.className='buy-btn'; btn.textContent = 'Buy';
@@ -401,7 +548,7 @@
                         updateUI();
                     });
 
-                    el.appendChild(img); el.appendChild(name); el.appendChild(price); el.appendChild(btn);
+                    el.appendChild(imgWrap); el.appendChild(name); el.appendChild(price); el.appendChild(btn);
                     return el;
                 }
 
@@ -477,21 +624,35 @@
                     return (mins>0? (mins+':') : '') + String(secs).padStart(2,'0');
                 }
 
-                function renderPlantList(){
-                    if(!plantedListEl) return;
-                    plantedListEl.innerHTML = '';
-                    window.game.planted.forEach(p=>{
-                        const item = document.createElement('div'); item.className='plant-item';
-                        const left = document.createElement('div'); left.className='plant-name'; left.textContent = p.name;
-                        const right = document.createElement('div');
-                        if(!p.ready){
-                            right.className='plant-timer'; right.textContent = formatTime(p.remaining);
+                function renderFarmPlots(){
+                    if(!farmPlotsEl) return;
+                    farmPlotsEl.innerHTML = '';
+
+                    for(let i = 0; i < window.game.maxPlots; i++){
+                        const plot = document.createElement('div');
+                        const planted = window.game.planted[i] || null;
+                        plot.className = 'farm-plot' + (planted ? '' : ' empty');
+
+                        if(planted){
+                            const img = document.createElement('img');
+                            img.className = 'plot-image';
+                            img.src = getTypeAsset(planted.seedId, planted.moldy);
+                            img.alt = planted.name;
+                            plot.appendChild(img);
+
+                            const status = document.createElement('div');
+                            status.className = 'plot-status';
+                            status.textContent = planted.ready ? (planted.moldy ? 'Moldy' : (planted.isAbyssal ? 'Abyssal' : 'Ready')) : formatTime(planted.remaining);
+                            plot.appendChild(status);
                         } else {
-                            right.className='plant-timer'; right.textContent = p.moldy ? 'Moldy' : (p.isAbyssal ? 'Abyssal' : 'Ready');
+                            const empty = document.createElement('div');
+                            empty.className = 'plot-empty';
+                            empty.textContent = 'Empty';
+                            plot.appendChild(empty);
                         }
-                        item.appendChild(left); item.appendChild(right);
-                        plantedListEl.appendChild(item);
-                    });
+
+                        farmPlotsEl.appendChild(plot);
+                    }
                 }
 
                 function maybeProjectorSellComment(kind){
@@ -554,42 +715,6 @@
                     window.game.balance += earned;
                     updateUI();
                     if(earned>0) showToast('Sold for ' + formatMoney(earned));
-                });
-
-                harvestAllBtn.addEventListener('click', ()=>{
-                    const ready = window.game.planted.filter(p=>p.ready);
-                    if(ready.length === 0) return showToast('No ready potatoes to harvest');
-                    const harvestComments = new Set();
-                    ready.forEach(p=>{
-                        const harvested = {
-                            id: p.id,
-                            type: p.seedId,
-                            sellValue: p.sellValue,
-                            canBeSold: p.canBeSold && !p.moldy,
-                            canBeStolen: p.canBeStolen !== false,
-                            name: p.name,
-                            isMajic: p.isMajic,
-                            isMythic: p.isMythic,
-                            isDarkMajic: p.isDarkMajic,
-                            isAbyssal: p.isAbyssal
-                        };
-                        if(p.isMajic){ harvested.sellValue = p.sellValue * (Math.random() < 0.5 ? 1.25 : 1); }
-                        if(p.isAbyssal && p.abyssalStart){ harvested.sellValue = p.sellValue; }
-                        window.game.harvested.push(harvested);
-                        if(p.moldy) showToast(p.name + ' harvested but is moldy');
-                        if(p.isAbyssal){ harvestComments.add('abyssal'); }
-                        if(p.isMythic){ harvestComments.add('mythic'); }
-                        if(p.isDarkMajic){ harvestComments.add('darkmajic'); }
-                        if(p.moldy){ harvestComments.add('moldy'); }
-                    });
-                    harvestComments.forEach(kind => {
-                        if(kind === 'abyssal'){ addComment('Into the abyss!', 'abyssal'); }
-                        else if(kind === 'mythic'){ addComment('Wow shiny!', 'mythic'); }
-                        else if(kind === 'darkmajic'){ addComment('Sourcery!', 'darkmajic'); }
-                        else if(kind === 'moldy'){ addComment('Ewww..', 'moldy'); }
-                    });
-                    window.game.planted = window.game.planted.filter(p=>!p.ready);
-                    updateUI(); renderPlantList();
                 });
 
                 potatoBtn.addEventListener('click', ()=>{
@@ -771,12 +896,10 @@
                 function updateUI(){
                     counter.textContent = window.game.harvested.length;
                     potatoesEl.textContent = 'Potatoes harvested: ' + window.game.harvested.length;
-                    plantedEl.textContent = 'Planted: ' + window.game.planted.length + ' / ' + window.game.maxPlots;
                     balanceEl.textContent = 'Money: ' + formatMoney(window.game.balance);
                     pricesEl.textContent = 'Sell: ' + formatMoney(window.game.baseSellPrice * window.game.sellMultiplier);
-                    renderPlantList();
-                    const readyCount = window.game.planted.filter(p=>p.ready).length;
-                    if(harvestAllBtn) harvestAllBtn.disabled = readyCount === 0;
+                    if(plotHint){ plotHint.textContent = window.game.planted.length + ' / ' + window.game.maxPlots + ' used'; }
+                    renderFarmPlots();
                 }
 
                 renderUpgrades(); renderPotatoes(); updateUI();
