@@ -285,6 +285,27 @@
             opacity: 0;
             transition: opacity 220ms ease, transform 220ms ease;
         }
+
+        .commentary-panel-inner {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            max-width: 100%;
+        }
+
+        .projector-badge {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
+            display: block;
+            flex-shrink: 0;
+        }
+
+        .commentary-text {
+            display: inline-block;
+            line-height: 1.3;
+        }
         </style>
 
         </head>
@@ -294,7 +315,6 @@
                 <div class="panel">
                     <h3>Stats</h3>
                     <div id="potatoes">Potatoes harvested: 0</div>
-                    <div id="planted">Planted: 0</div>
                     <div id="balance">Money: $0</div>
                     <div id="prices">Sell: $10</div>
                     <div style="margin-top:8px">
@@ -319,16 +339,6 @@
                         </div>
                         <div id="farmPlots" class="farm-plots"></div>
                     </div>
-
-                    <div id="plantedSection" style="margin-top:12px">
-                        <h4 style="margin:6px 0 8px 0">Planted Potatoes</h4>
-                        <div id="plantedList" class="planted-list">
-                            <!-- planted items with timers -->
-                        </div>
-                        <div style="margin-top:8px">
-                            <button id="harvestAllBtn" class="buy-btn" disabled>Harvest All</button>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="panel">
@@ -341,7 +351,12 @@
 
             <div id="toastContainer" class="toast-container" aria-live="polite"></div>
             <div id="jumpscare" class="jumpscare" aria-hidden="true"></div>
-            <div id="commentaryPanel" class="commentary-panel" aria-live="polite">Projector Potato is listening...</div>
+            <div id="commentaryPanel" class="commentary-panel" aria-live="polite">
+                <div class="commentary-panel-inner">
+                    <img class="projector-badge" src="resources/potato-projector.png" alt="Projector Potato">
+                    <span class="commentary-text">Projector Potato is listening...</span>
+                </div>
+            </div>
 
             <script>
             (function(){
@@ -364,14 +379,11 @@
                 const potatoBtn = document.getElementById('potatoBtn');
                 const counter = document.getElementById('counter');
                 const potatoesEl = document.getElementById('potatoes');
-                const plantedEl = document.getElementById('planted');
                 const balanceEl = document.getElementById('balance');
                 const pricesEl = document.getElementById('prices');
                 const sellBtn = document.getElementById('sellBtn');
                 const upGrid = document.getElementById('upgradesGrid');
                 const sdGrid = document.getElementById('seedsGrid');
-                const plantedListEl = document.getElementById('plantedList');
-                const harvestAllBtn = document.getElementById('harvestAllBtn');
                 const toastContainer = document.getElementById('toastContainer');
                 const jumpscareEl = document.getElementById('jumpscare');
                 const commentaryPanel = document.getElementById('commentaryPanel');
@@ -379,6 +391,29 @@
                 const plotHint = document.getElementById('plotHint');
 
                 function formatMoney(n){ return '$' + (Number(n) || 0).toFixed(2); }
+
+                function renderCommentaryText(message, showProjector = false){
+                    if(!commentaryPanel) return;
+                    commentaryPanel.innerHTML = '';
+
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'commentary-panel-inner';
+
+                    if(showProjector){
+                        const img = document.createElement('img');
+                        img.className = 'projector-badge';
+                        img.src = 'resources/potato-projector.png';
+                        img.alt = 'Projector Potato';
+                        wrapper.appendChild(img);
+                    }
+
+                    const text = document.createElement('span');
+                    text.className = 'commentary-text';
+                    text.textContent = showProjector ? message.replace(/^Projector Potato:\s*/i, '') : message;
+                    wrapper.appendChild(text);
+
+                    commentaryPanel.appendChild(wrapper);
+                }
 
                 function getTypeAsset(type, moldy = false){
                     const map = {
@@ -412,7 +447,8 @@
                     if(lastSame){ return; }
                     window.game.commentary = [item];
                     if(commentaryPanel){
-                        commentaryPanel.textContent = message;
+                        const showProjector = type === 'projector' || /Projector Potato/i.test(message);
+                        renderCommentaryText(message, showProjector);
                         commentaryPanel.style.opacity = '1';
                         commentaryPanel.style.transform = 'translateX(-50%) translateY(0)';
                         clearTimeout(commentaryPanel._fadeTimer);
@@ -619,29 +655,6 @@
                     }
                 }
 
-                function renderPlantList(){
-                    if(!plantedListEl) return;
-                    plantedListEl.innerHTML = '';
-                    window.game.planted.forEach(p=>{
-                        const item = document.createElement('div'); item.className='plant-item';
-                        const left = document.createElement('div'); left.className='plant-name-wrap';
-                        const icon = document.createElement('img');
-                        icon.className = 'plant-icon';
-                        icon.src = getTypeAsset(p.seedId, p.moldy);
-                        icon.alt = p.name;
-                        const name = document.createElement('div'); name.className='plant-name'; name.textContent = p.name;
-                        left.appendChild(icon); left.appendChild(name);
-                        const right = document.createElement('div');
-                        if(!p.ready){
-                            right.className='plant-timer'; right.textContent = formatTime(p.remaining);
-                        } else {
-                            right.className='plant-timer'; right.textContent = p.moldy ? 'Moldy' : (p.isAbyssal ? 'Abyssal' : 'Ready');
-                        }
-                        item.appendChild(left); item.appendChild(right);
-                        plantedListEl.appendChild(item);
-                    });
-                }
-
                 function maybeProjectorSellComment(kind){
                     if(kind === 'moldy'){ addComment('Projector Potato: "that\'s against the FDA rules!"', 'projector'); }
                     else if(kind === 'normal'){ addComment('Projector Potato: "cheap-o"', 'projector'); }
@@ -702,42 +715,6 @@
                     window.game.balance += earned;
                     updateUI();
                     if(earned>0) showToast('Sold for ' + formatMoney(earned));
-                });
-
-                harvestAllBtn.addEventListener('click', ()=>{
-                    const ready = window.game.planted.filter(p=>p.ready);
-                    if(ready.length === 0) return showToast('No ready potatoes to harvest');
-                    const harvestComments = new Set();
-                    ready.forEach(p=>{
-                        const harvested = {
-                            id: p.id,
-                            type: p.seedId,
-                            sellValue: p.sellValue,
-                            canBeSold: p.canBeSold && !p.moldy,
-                            canBeStolen: p.canBeStolen !== false,
-                            name: p.name,
-                            isMajic: p.isMajic,
-                            isMythic: p.isMythic,
-                            isDarkMajic: p.isDarkMajic,
-                            isAbyssal: p.isAbyssal
-                        };
-                        if(p.isMajic){ harvested.sellValue = p.sellValue * (Math.random() < 0.5 ? 1.25 : 1); }
-                        if(p.isAbyssal && p.abyssalStart){ harvested.sellValue = p.sellValue; }
-                        window.game.harvested.push(harvested);
-                        if(p.moldy) showToast(p.name + ' harvested but is moldy');
-                        if(p.isAbyssal){ harvestComments.add('abyssal'); }
-                        if(p.isMythic){ harvestComments.add('mythic'); }
-                        if(p.isDarkMajic){ harvestComments.add('darkmajic'); }
-                        if(p.moldy){ harvestComments.add('moldy'); }
-                    });
-                    harvestComments.forEach(kind => {
-                        if(kind === 'abyssal'){ addComment('Into the abyss!', 'abyssal'); }
-                        else if(kind === 'mythic'){ addComment('Wow shiny!', 'mythic'); }
-                        else if(kind === 'darkmajic'){ addComment('Sourcery!', 'darkmajic'); }
-                        else if(kind === 'moldy'){ addComment('Ewww..', 'moldy'); }
-                    });
-                    window.game.planted = window.game.planted.filter(p=>!p.ready);
-                    updateUI(); renderPlantList();
                 });
 
                 potatoBtn.addEventListener('click', ()=>{
@@ -919,14 +896,10 @@
                 function updateUI(){
                     counter.textContent = window.game.harvested.length;
                     potatoesEl.textContent = 'Potatoes harvested: ' + window.game.harvested.length;
-                    plantedEl.textContent = 'Planted: ' + window.game.planted.length + ' / ' + window.game.maxPlots;
                     balanceEl.textContent = 'Money: ' + formatMoney(window.game.balance);
                     pricesEl.textContent = 'Sell: ' + formatMoney(window.game.baseSellPrice * window.game.sellMultiplier);
                     if(plotHint){ plotHint.textContent = window.game.planted.length + ' / ' + window.game.maxPlots + ' used'; }
                     renderFarmPlots();
-                    renderPlantList();
-                    const readyCount = window.game.planted.filter(p=>p.ready).length;
-                    if(harvestAllBtn) harvestAllBtn.disabled = readyCount === 0;
                 }
 
                 renderUpgrades(); renderPotatoes(); updateUI();
